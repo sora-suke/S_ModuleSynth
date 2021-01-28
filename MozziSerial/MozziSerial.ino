@@ -139,7 +139,35 @@ void noteOff(byte channel, byte pitch, byte velocity)
 
 //コントロールチェンジ
 void controlChange(byte channel, byte number, byte value){
-  
+  if (number == 0b0111) { //0111 = 全体の音量について
+      allVolume = value * 2;
+    } else if (number == 21) { // エンベロープの有効か無効か
+      Serial.println("adsrOn");
+      if (value == 1) { //1なら有効、それ以外なら無効
+        adsrOn = true;
+      }
+      else {
+        adsrOn = false;
+      }
+    } else if (number == 22) { //エンベロープのAttack時間
+      Serial.println("1");
+      atk = value * 10;
+    } else if (number == 23) { //エンベロープのDecay時間
+      Serial.println("d");
+      dec = value * 10;
+    } else if (number == 24) { //エンベロープのSustain時間
+      Serial.println("s");
+      sus = value * 100;
+    } else if (number == 25) { //エンベロープのRelease時間
+      Serial.println("r");
+      rel = value * 100;
+    } else if (number == 26) { //エンベロープAttackの音量
+      Serial.println("a v");
+      atk_vol = value * 2;
+    } else if (number == 27) { //エンベロープDecayの音量
+      Serial.println("d v");
+      dec_vol = value * 2;
+    }
 }
 
 //オシレーターをすべてリセット
@@ -256,46 +284,19 @@ void rE(int num) {
   if (s == 0b1001) { //発音信号なら
     if (v != 0) { //音量が0じゃないなら
 
-      nOn(0, e, v);
+      noteOn(0, e, v);
 
       return;
     } else {
-      nOff(0, e, v);
+      noteOff(0, e, v);
       return;
     }
   } else if (s == 0b1000) { //発音停止信号なら
-    nOff(0, e, v);
+    noteOff(0, e, v);
   } else if (s == 0b1011) { //コントロールチェンジ信号なら
     Serial.println("cc");
-    if (e == 0b0111) { //0111 = 全体の音量について
-      allVolume = v * 2;
-    } else if (e == 21) { // エンベロープの有効か無効か
-      Serial.println("adsrOn");
-      if (v == 1) { //1なら有効、それ以外なら無効
-        adsrOn = true;
-      }
-      else {
-        adsrOn = false;
-      }
-    } else if (e == 22) { //エンベロープのAttack時間
-      Serial.println("1");
-      atk = v * 10;
-    } else if (e == 23) { //エンベロープのDecay時間
-      Serial.println("d");
-      dec = v * 10;
-    } else if (e == 24) { //エンベロープのSustain時間
-      Serial.println("s");
-      sus = v * 100;
-    } else if (e == 25) { //エンベロープのRelease時間
-      Serial.println("r");
-      rel = v * 100;
-    } else if (e == 26) { //エンベロープAttackの音量
-      Serial.println("a v");
-      atk_vol = v * 2;
-    } else if (e == 27) { //エンベロープDecayの音量
-      Serial.println("d v");
-      dec_vol = v * 2;
-    }
+    controlChange(c, e, v);
+    
   }
 
 }
