@@ -142,30 +142,18 @@ void controlChange(byte channel, byte number, byte value){
   if (number == 0b0111) { //0111 = 全体の音量について
       allVolume = value * 2;
     } else if (number == 21) { // エンベロープの有効か無効か
-      Serial.println("adsrOn");
-      if (value == 1) { //1なら有効、それ以外なら無効
-        adsrOn = true;
-      }
-      else {
-        adsrOn = false;
-      }
+      adsrOn = value == 1;
     } else if (number == 22) { //エンベロープのAttack時間
-      Serial.println("1");
       atk = value * 10;
     } else if (number == 23) { //エンベロープのDecay時間
-      Serial.println("d");
       dec = value * 10;
     } else if (number == 24) { //エンベロープのSustain時間
-      Serial.println("s");
       sus = value * 100;
     } else if (number == 25) { //エンベロープのRelease時間
-      Serial.println("r");
       rel = value * 100;
     } else if (number == 26) { //エンベロープAttackの音量
-      Serial.println("a v");
       atk_vol = value * 2;
     } else if (number == 27) { //エンベロープDecayの音量
-      Serial.println("d v");
       dec_vol = value * 2;
     }
 }
