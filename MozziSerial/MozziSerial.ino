@@ -64,7 +64,7 @@ bool adsrOn = true;
 
 //仮のピンアサイン
 SoftwareSerial MIDISerial(2, 4); //RX TX
-MIDI_CREATE_INSTANCE(SoftwareSerial, MIDISerial, sMIDI);
+MIDI_CREATE_INSTANCE(SoftwareSerial, MIDISerial, sMIDI); //sMIDIがMIDI.beginとかやる
 
 //オシレーターのリセットスイッチのピン
 #define BTN_RST_OCL 2
