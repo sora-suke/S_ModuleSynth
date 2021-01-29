@@ -6,6 +6,7 @@
 //
 
 #include <SoftwareSerial.h>
+#include <MIDI.h>
 #include <MozziGuts.h>
 #include <mozzi_midi.h>
 #include <Oscil.h>
@@ -62,7 +63,8 @@ byte dec_vol = 255;
 bool adsrOn = true;
 
 //仮のピンアサイン
-SoftwareSerial MIDISerial(2, 4) //RX TX
+SoftwareSerial MIDISerial(2, 4); //RX TX
+MIDI_CREATE_INSTANCE(SoftwareSerial, MIDISerial, sMIDI);
 
 //オシレーターのリセットスイッチのピン
 #define BTN_RST_OCL 2
@@ -168,14 +170,6 @@ void clearOcilators() {
   Serial.println("RESET OCILATORS");
 }
 
-//I2Cを開始
-void setupI2C() {
-
-  Wire.begin(I2C_ADDRESS);
-  Wire.onReceive(rE); //I2C信号を受信した時呼ばれる関数
-  Serial.println("RESET I2C DEVICE");
-}
-
 //MozziにてUpdateの代わりにここに記述
 void updateControl()
 {
@@ -199,9 +193,8 @@ void updateControl()
   {
     char sel = Serial.read();
     Serial.print(sel);
-    if (sel == 'r') { //シリアルで'r'を受信したらオシレーターとI2Cのリセット
+    if (sel == 'r') { //シリアルで'r'を受信したらオシレーターのリセット
       clearOcilators();
-      setupI2C();
     }
 
   }
@@ -209,7 +202,6 @@ void updateControl()
   //ボタンが押されたらオシレーターとI2Cのリセット
   if (digitalRead(BTN_RST_OCL) && !BTN_OCL_PRE) {
     clearOcilators();
-    setupI2C();
   }
   //最後に今のボタンの状態を以前のボタンの状態の変数に記録させる
   //そうすることで前のループで押されていたかを記憶し、押された瞬間を知ることができる
@@ -244,47 +236,17 @@ int updateAudio()
 
 void setup() {
   Serial.begin(9600);
-  setupI2C();
   startMozzi(CONTROL_RATE); //Mozziを開始する
   pinMode(BTN_RST_OCL, INPUT_PULLUP);
   pinMode(13, OUTPUT);
   Serial.println("begin");
+  sMIDI.begin(MIDI_CHANNEL_OMNI);
+  sMIDI.setHandleNoteOn(noteOn);
+  sMIDI.setHandleNoteOff(noteOff);
+  sMIDI.setHandleControlChange(controlChange);
 }
 
 void loop() {
   //音声処理を続けるためこれのみをloop内には記述する
   audioHook();
-}
-
-//I2C信号を受信したとき呼ぶ
-void rE(int num) {
-  Serial.println("rE");
-
-  受け取ったMIDIのパラメーターそれぞれ
-  byte s = Wire.read(); //制御信号の種類
-  byte c = Wire.read(); //チャンネル
-  byte e = Wire.read(); //信号の種類
-  byte v = Wire.read(); //量
-  Serial.println(s);
-  Serial.println(c);
-  Serial.println(e);
-  Serial.println(v);
-  if (s == 0b1001) { //発音信号なら
-    if (v != 0) { //音量が0じゃないなら
-
-      noteOn(0, e, v);
-
-      return;
-    } else {
-      noteOff(0, e, v);
-      return;
-    }
-  } else if (s == 0b1000) { //発音停止信号なら
-    noteOff(0, e, v);
-  } else if (s == 0b1011) { //コントロールチェンジ信号なら
-    Serial.println("cc");
-    controlChange(c, e, v);
-    
-  }
-
 }
