@@ -1,6 +1,6 @@
 //
 //  Author: sorasuke(Twitter: @sora_suke_mc)
-// 
+//
 //  Runnable Arduino: Uno (ATmega328P)
 //
 //
@@ -42,6 +42,7 @@ ADSR<AUDIO_RATE, AUDIO_RATE> envelope4;
 ADSR<AUDIO_RATE, AUDIO_RATE> envelope2;
 ADSR<AUDIO_RATE, AUDIO_RATE> envelope3;
 
+#define MIDI_CHANNEL 1
 
 #define SOUNDS_VALUE 4 //同時発音可能数(オシレーターの数)
 byte notesPitch[4] = {0, 0, 0, 0}; //4つのオシレーターの音階
@@ -76,6 +77,7 @@ byte BTN_OCL_PRE = 0;
 //チャンネル、音階、音量
 void noteOn(byte channel, byte pitch, byte velocity)
 {
+  Serial.println("noteOn");
   for (int i = 0; i < SOUNDS_VALUE; i++) //未使用のオシレーターを探す
   {
     if (notesEnable[i] == false) //i番のオシレーターが未使用なら
@@ -110,7 +112,7 @@ void noteOn(byte channel, byte pitch, byte velocity)
 //チャンネル、音階、音量
 void noteOff(byte channel, byte pitch, byte velocity)
 {
-
+  Serial.println("noteOff");
   for (int i = 0; i < SOUNDS_VALUE; i++)
   {
     if (notesPitch[i] == pitch)
@@ -140,24 +142,25 @@ void noteOff(byte channel, byte pitch, byte velocity)
 }
 
 //コントロールチェンジ
-void controlChange(byte channel, byte number, byte value){
+void controlChange(byte channel, byte number, byte value) {
+  Serial.println("controlChange");
   if (number == 0b0111) { //0111 = 全体の音量について
-      allVolume = value * 2;
-    } else if (number == 21) { // エンベロープの有効か無効か
-      adsrOn = value == 1;
-    } else if (number == 22) { //エンベロープのAttack時間
-      atk = value * 10;
-    } else if (number == 23) { //エンベロープのDecay時間
-      dec = value * 10;
-    } else if (number == 24) { //エンベロープのSustain時間
-      sus = value * 100;
-    } else if (number == 25) { //エンベロープのRelease時間
-      rel = value * 100;
-    } else if (number == 26) { //エンベロープAttackの音量
-      atk_vol = value * 2;
-    } else if (number == 27) { //エンベロープDecayの音量
-      dec_vol = value * 2;
-    }
+    allVolume = value * 2;
+  } else if (number == 21) { // エンベロープの有効か無効か
+    adsrOn = value == 1;
+  } else if (number == 22) { //エンベロープのAttack時間
+    atk = value * 10;
+  } else if (number == 23) { //エンベロープのDecay時間
+    dec = value * 10;
+  } else if (number == 24) { //エンベロープのSustain時間
+    sus = value * 100;
+  } else if (number == 25) { //エンベロープのRelease時間
+    rel = value * 100;
+  } else if (number == 26) { //エンベロープAttackの音量
+    atk_vol = value * 2;
+  } else if (number == 27) { //エンベロープDecayの音量
+    dec_vol = value * 2;
+  }
 }
 
 //オシレーターをすべてリセット
@@ -173,6 +176,9 @@ void clearOcilators() {
 //MozziにてUpdateの代わりにここに記述
 void updateControl()
 {
+
+  sMIDI.read();
+
   //エンベロープの設定
   envelope1.setADLevels(atk_vol, dec_vol);
   envelope1.setTimes(atk, dec, sus, rel);
@@ -220,6 +226,7 @@ int updateAudio()
   //瞬間の波形の高さを入れる変数
   int ret;
 
+
   ret += (int) //最終的にintにする
          ((aSin1.next() * notesVolume[0] >> 7) //波形を音量に合わせて小さくする
           * (adsrOn ? //エンベロープが有効なら
@@ -227,8 +234,11 @@ int updateAudio()
              : 255 //無効ならそのまま
             )) >> 8; //出力できる最大から溢れないようにする
   //以下同様
+
   ret += (int)((aSin2.next() * notesVolume[1] >> 7) * (adsrOn ? envelope2.next() : 255)) >> 8;
+
   ret += (int)((aSin3.next() * notesVolume[2] >> 7) * (adsrOn ? envelope3.next() : 255)) >> 8;
+
   ret += (int)((aSin4.next() * notesVolume[3] >> 7) * (adsrOn ? envelope4.next() : 255)) >> 8;
   //戻り値は瞬間の波形の高さ
   return (int)((ret >> 2) * allVolume) >> 8; //出力できる最大から溢れないようにする
@@ -239,12 +249,12 @@ void setup() {
   startMozzi(CONTROL_RATE); //Mozziを開始する
   pinMode(BTN_RST_OCL, INPUT_PULLUP);
   pinMode(13, OUTPUT);
-  
-  sMIDI.begin(MIDI_CHANNEL_OMNI);
+
+  sMIDI.begin(MIDI_CHANNEL);
   sMIDI.setHandleNoteOn(noteOn);
   sMIDI.setHandleNoteOff(noteOff);
   sMIDI.setHandleControlChange(controlChange);
-  
+
   Serial.println("begin");
 }
 
