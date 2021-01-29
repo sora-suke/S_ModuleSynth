@@ -239,11 +239,13 @@ void setup() {
   startMozzi(CONTROL_RATE); //Mozziを開始する
   pinMode(BTN_RST_OCL, INPUT_PULLUP);
   pinMode(13, OUTPUT);
-  Serial.println("begin");
+  
   sMIDI.begin(MIDI_CHANNEL_OMNI);
   sMIDI.setHandleNoteOn(noteOn);
   sMIDI.setHandleNoteOff(noteOff);
   sMIDI.setHandleControlChange(controlChange);
+  
+  Serial.println("begin");
 }
 
 void loop() {
