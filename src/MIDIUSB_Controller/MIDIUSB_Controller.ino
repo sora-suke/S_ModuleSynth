@@ -17,11 +17,11 @@ void loop() {
       Serial.print("Received: ");
       //Serial.print(rx.header, BIN);
       //Serial.print("-");
-      Serial.print(rx.byte1, BIN);
+      /*Serial.print(rx.byte1, BIN);
       Serial.print("-");
       Serial.print(rx.byte2, BIN);
       Serial.print("-");
-      Serial.println(rx.byte3, BIN);
+      Serial.println(rx.byte3, BIN);*/
       Serial1.write(rx.byte1);
       Serial1.write(rx.byte2);
       Serial1.write(rx.byte3);
