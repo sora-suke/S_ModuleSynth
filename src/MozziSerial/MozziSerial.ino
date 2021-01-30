@@ -18,24 +18,24 @@
 
 #define CONTROL_RATE 128 //Mozziのコントロールレート
 
-//正弦波のオシレーター
-Oscil<SIN2048_NUM_CELLS, AUDIO_RATE> aSin1(SIN2048_DATA);
-Oscil<SIN2048_NUM_CELLS, AUDIO_RATE> aSin2(SIN2048_DATA);
-Oscil<SIN2048_NUM_CELLS, AUDIO_RATE> aSin3(SIN2048_DATA);
-Oscil<SIN2048_NUM_CELLS, AUDIO_RATE> aSin4(SIN2048_DATA);
-
-/*//矩形波のオシレーター
-Oscil <SQUARE_ANALOGUE512_NUM_CELLS, AUDIO_RATE> aSqu1(SQUARE_ANALOGUE512_DATA);
-Oscil <SQUARE_ANALOGUE512_NUM_CELLS, AUDIO_RATE> aSqu2(SQUARE_ANALOGUE512_DATA);
-Oscil <SQUARE_ANALOGUE512_NUM_CELLS, AUDIO_RATE> aSqu3(SQUARE_ANALOGUE512_DATA);
-Oscil <SQUARE_ANALOGUE512_NUM_CELLS, AUDIO_RATE> aSqu4(SQUARE_ANALOGUE512_DATA);
+/*//正弦波のオシレーター
+Oscil<SIN2048_NUM_CELLS, AUDIO_RATE> ocil1(SIN2048_DATA);
+Oscil<SIN2048_NUM_CELLS, AUDIO_RATE> ocil2(SIN2048_DATA);
+Oscil<SIN2048_NUM_CELLS, AUDIO_RATE> ocil3(SIN2048_DATA);
+Oscil<SIN2048_NUM_CELLS, AUDIO_RATE> ocil4(SIN2048_DATA);
 */
+//矩形波のオシレーター
+  Oscil <SQUARE_ANALOGUE512_NUM_CELLS, AUDIO_RATE> ocil1(SQUARE_ANALOGUE512_DATA);
+  Oscil <SQUARE_ANALOGUE512_NUM_CELLS, AUDIO_RATE> ocil2(SQUARE_ANALOGUE512_DATA);
+  Oscil <SQUARE_ANALOGUE512_NUM_CELLS, AUDIO_RATE> ocil3(SQUARE_ANALOGUE512_DATA);
+  Oscil <SQUARE_ANALOGUE512_NUM_CELLS, AUDIO_RATE> ocil4(SQUARE_ANALOGUE512_DATA);
+
 
 /*//ノコギリ波のオシレーター
-Oscil <SAW1024_NUM_CELLS, AUDIO_RATE> aSaw1(SAW1024_DATA);
-Oscil <SAW1024_NUM_CELLS, AUDIO_RATE> aSaw2(SAW1024_DATA);
-Oscil <SAW1024_NUM_CELLS, AUDIO_RATE> aSaw3(SAW1024_DATA);
-Oscil <SAW1024_NUM_CELLS, AUDIO_RATE> aSaw4(SAW1024_DATA);
+  Oscil <SAW1024_NUM_CELLS, AUDIO_RATE> ocil1(SAW1024_DATA);
+  Oscil <SAW1024_NUM_CELLS, AUDIO_RATE> ocil2(SAW1024_DATA);
+  Oscil <SAW1024_NUM_CELLS, AUDIO_RATE> ocil3(SAW1024_DATA);
+  Oscil <SAW1024_NUM_CELLS, AUDIO_RATE> ocil4(SAW1024_DATA);
 */
 
 //エンベロープ
@@ -44,7 +44,7 @@ ADSR<AUDIO_RATE, AUDIO_RATE> envelope4;
 ADSR<AUDIO_RATE, AUDIO_RATE> envelope2;
 ADSR<AUDIO_RATE, AUDIO_RATE> envelope3;
 
-#define MIDI_CHANNEL 1
+byte MIDI_CHANNEL = 0;
 
 #define SOUNDS_VALUE 4 //同時発音可能数(オシレーターの数)
 byte notesPitch[4] = {0, 0, 0, 0}; //4つのオシレーターの音階
@@ -168,6 +168,7 @@ void controlChange(byte channel, byte number, byte value) {
   } else if (number == 27) { //エンベロープDecayの音量
     dec_vol = value * 2;
   }
+  setEnvelopes();
 }
 
 //オシレーターをすべてリセット
@@ -180,12 +181,7 @@ void clearOcilators() {
   debugPrint("RESET OCILATORS");
 }
 
-//MozziにてUpdateの代わりにここに記述
-void updateControl()
-{
-
-  sMIDI.read();
-
+void setEnvelopes() {
   //エンベロープの設定
   envelope1.setADLevels(atk_vol, dec_vol);
   envelope1.setTimes(atk, dec, sus, rel);
@@ -195,13 +191,24 @@ void updateControl()
   envelope3.setTimes(atk, dec, sus, rel);
   envelope4.setADLevels(atk_vol, dec_vol);
   envelope4.setTimes(atk, dec, sus, rel);
+}
+
+//MozziにてUpdateの代わりにここに記述
+void updateControl()
+{
+
+  sMIDI.read();
+
+
+
+
 
   //オシレーターの周波数を設定
   //mtof関数はMIDIの音階番号を周波数にする
-  aSin1.setFreq(mtof(notesPitch[0]));
-  aSin2.setFreq(mtof(notesPitch[1]));
-  aSin3.setFreq(mtof(notesPitch[2]));
-  aSin4.setFreq(mtof(notesPitch[3]));
+  ocil1.setFreq(mtof(notesPitch[0]));
+  ocil2.setFreq(mtof(notesPitch[1]));
+  ocil3.setFreq(mtof(notesPitch[2]));
+  ocil4.setFreq(mtof(notesPitch[3]));
   if (Serial.available())
   {
     char sel = Serial.read();
@@ -224,49 +231,61 @@ void updateControl()
 //Mozziの音声についてのアップデート
 int updateAudio()
 {
+
   //エンベロープを更新
   envelope1.update();
   envelope2.update();
   envelope3.update();
   envelope4.update();
-
   //瞬間の波形の高さを入れる変数
   int ret;
 
 
   ret += (int) //最終的にintにする
          (((
-          (adsrOn ? envelope1.next() : 255) * aSin1.next()
-          ) >> 8)
+             (adsrOn ? envelope1.next() : 255) * ocil1.next()
+           ) >> 8)
           * notesVolume[0]) >> 7;
   //以下同様
 
-  ret += (int)((((adsrOn ? envelope2.next() : 255) * aSin2.next()) >> 8) * notesVolume[1]) >> 7;
-  ret += (int)((((adsrOn ? envelope3.next() : 255) * aSin3.next()) >> 8) * notesVolume[2]) >> 7;
-  ret += (int)((((adsrOn ? envelope4.next() : 255) * aSin4.next()) >> 8) * notesVolume[3]) >> 7;
+  ret += (int)((((adsrOn ? envelope2.next() : 255) * ocil2.next()) >> 8) * notesVolume[1]) >> 7;
+  ret += (int)((((adsrOn ? envelope3.next() : 255) * ocil3.next()) >> 8) * notesVolume[2]) >> 7;
+  ret += (int)((((adsrOn ? envelope4.next() : 255) * ocil4.next()) >> 8) * notesVolume[3]) >> 7;
   //戻り値は瞬間の波形の高さ
   return (int)((ret >> 2) * allVolume) >> 8; //出力できる最大から溢れないようにする
 }
 
 void setup() {
   Serial.begin(115200);
-  
+
   pinMode(BTN_RST_OCL, INPUT_PULLUP);
   pinMode(13, OUTPUT);
 
+  pinMode(5, INPUT_PULLUP);
+  pinMode(6, INPUT_PULLUP);
+  pinMode(7, INPUT_PULLUP);
+  pinMode(8, INPUT_PULLUP);
+
+  byte b4 = digitalRead(5) == LOW;
+  byte b3 = digitalRead(6) == LOW;
+  byte b2 = digitalRead(7) == LOW;
+  byte b1 = digitalRead(8) == LOW;
   
+  MIDI_CHANNEL = (b4 << 3) + (b3 << 2) + (b2 << 1) + b1;
+  Serial.println(MIDI_CHANNEL);
+
   sMIDI.setHandleNoteOn(noteOn);
   sMIDI.setHandleNoteOff(noteOff);
   sMIDI.setHandleControlChange(controlChange);
   sMIDI.begin(MIDI_CHANNEL);
-  
-  startMozzi(CONTROL_RATE); //Mozziを開始する
 
+  startMozzi(CONTROL_RATE); //Mozziを開始する
+  setEnvelopes();
   debugPrint("begin");
 }
 
-void debugPrint(char* c){
-  if(IS_DEBUG_MODE)
+void debugPrint(char* c) {
+  if (IS_DEBUG_MODE)
     Serial.println(c);
 }
 
