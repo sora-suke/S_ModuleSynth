@@ -1,7 +1,7 @@
 #include <MIDIUSB.h>
 
 void setup() {
-  Serial.begin(115200); //デバッグ用にPCとシリアル通信する
+  //Serial.begin(115200); //デバッグ用にPCとシリアル通信する
   Serial1.begin(31250);
 }
 
@@ -14,10 +14,10 @@ void loop() {
     rx = MidiUSB.read(); //通信を読み取る
     if (rx.header != 0) {
       //デバッグ用表示
-      Serial.print("Received: ");
+      /*Serial.print("Received: ");
       //Serial.print(rx.header, BIN);
       //Serial.print("-");
-      /*Serial.print(rx.byte1, BIN);
+      Serial.print(rx.byte1, BIN);
       Serial.print("-");
       Serial.print(rx.byte2, BIN);
       Serial.print("-");
