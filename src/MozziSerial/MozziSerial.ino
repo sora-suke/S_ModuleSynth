@@ -70,9 +70,9 @@ byte dec_vol = 64;
 bool adsrOn = true;
 
 //仮のピンアサイン
-SoftwareSerial MIDISerial(3, 4); //RX TX
-MIDI_CREATE_INSTANCE(SoftwareSerial, MIDISerial, sMIDI); //sMIDIがMIDI.beginとかやる
-//MIDI_CREATE_DEFAULT_INSTANCE();
+//SoftwareSerial MIDISerial(3, 4); //RX TX
+//MIDI_CREATE_INSTANCE(SoftwareSerial, MIDISerial, sMIDI); //sMIDIがMIDI.beginとかやる
+MIDI_CREATE_DEFAULT_INSTANCE();
 
 //オシレーターのリセットスイッチのピン
 #define BTN_RST_OCL 2
@@ -197,7 +197,7 @@ void setEnvelopes() {
 void updateControl()
 {
 
-  sMIDI.read();
+  MIDI.read();
 
 
 
@@ -209,7 +209,7 @@ void updateControl()
   ocil2.setFreq(mtof(notesPitch[1]));
   ocil3.setFreq(mtof(notesPitch[2]));
   ocil4.setFreq(mtof(notesPitch[3]));
-  if (Serial.available())
+  /*if (Serial.available())
   {
     char sel = Serial.read();
     debugPrint(sel);
@@ -217,7 +217,7 @@ void updateControl()
       clearOcilators();
     }
 
-  }
+  }*/
 
   //ボタンが押されたらオシレーターとI2Cのリセット
   if (digitalRead(BTN_RST_OCL) && !BTN_OCL_PRE) {
@@ -256,7 +256,7 @@ int updateAudio()
 }
 
 void setup() {
-  Serial.begin(115200);
+  //Serial.begin(115200);
 
   pinMode(BTN_RST_OCL, INPUT_PULLUP);
   pinMode(13, OUTPUT);
@@ -272,12 +272,12 @@ void setup() {
   byte b1 = digitalRead(8) == LOW;
   
   MIDI_CHANNEL = (b4 << 3) + (b3 << 2) + (b2 << 1) + b1;
-  Serial.println(MIDI_CHANNEL);
+  //Serial.println(MIDI_CHANNEL);
 
-  sMIDI.setHandleNoteOn(noteOn);
-  sMIDI.setHandleNoteOff(noteOff);
-  sMIDI.setHandleControlChange(controlChange);
-  sMIDI.begin(MIDI_CHANNEL);
+  MIDI.setHandleNoteOn(noteOn);
+  MIDI.setHandleNoteOff(noteOff);
+  MIDI.setHandleControlChange(controlChange);
+  MIDI.begin(MIDI_CHANNEL);
 
   startMozzi(CONTROL_RATE); //Mozziを開始する
   setEnvelopes();
